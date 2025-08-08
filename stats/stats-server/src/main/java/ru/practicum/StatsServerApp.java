@@ -9,3 +9,7 @@ public class StatsServerApp {
         SpringApplication.run(StatsServerApp.class);
     }
 }
+
+/*
+Сергей Привет. Отправляю тебе первую часть на проверку. Хороших тебе выходных)
+ */
