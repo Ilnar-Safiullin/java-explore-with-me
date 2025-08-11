@@ -11,15 +11,12 @@ import ru.practicum.mapper.EndpointHitMapper;
 import ru.practicum.model.EndpointHit;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class StatServiceImpl implements StatService {
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
     private final StatRepository statRepository;
     private final EndpointHitMapper endpointHitMapper;
 
@@ -37,12 +34,9 @@ public class StatServiceImpl implements StatService {
     }
 
     @Override
-    public List<ViewStatsDto> getStats(String start, String end, List<String> uris, boolean unique) {
-        LocalDateTime startTime = LocalDateTime.parse(start, FORMATTER);
-        LocalDateTime endTime = LocalDateTime.parse(end, FORMATTER);
-
+    public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
         return unique ?
-                statRepository.findUniqueStats(startTime, endTime, uris)
-                : statRepository.findAllStats(startTime, endTime, uris);
+                statRepository.findUniqueStats(start, end, uris)
+                : statRepository.findAllStats(start, end, uris);
     }
 }

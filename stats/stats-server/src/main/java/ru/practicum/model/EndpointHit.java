@@ -21,7 +21,5 @@ public class EndpointHit {
     private String app;
     private String uri;
     private String ip;
-
-    @Column(name = "timestamp")
     private LocalDateTime timestamp;
 }
