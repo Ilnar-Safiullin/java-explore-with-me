@@ -2,13 +2,13 @@ server:
   port: 8080
 
 stats-server:
-  url: http://localhost:9090
+  url: http://stats-server:9090
 
 spring:
   datasource:
     url: jdbc:postgresql://ewm-db:5432/ewm_main_db
-    username: ewm_user
-    password: ewm_password
+    username: user
+    password: password
   jpa:
     hibernate:
       ddl-auto: create-drop
