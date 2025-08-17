@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.dao.StatRepository;
@@ -42,6 +43,10 @@ public class StatServiceImpl implements StatService {
 
         LocalDateTime startTime = LocalDateTime.parse(start,DATE_TIME_FORMATTER);
         LocalDateTime endTime = LocalDateTime.parse(end,DATE_TIME_FORMATTER);
+
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("Старт не может быть позже окончания");
+        }
 
         List<ViewStatsDto> viewStatsDtos;
         if (unique) {
