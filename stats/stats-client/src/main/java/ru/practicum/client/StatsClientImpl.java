@@ -12,6 +12,7 @@ import ru.practicum.ViewStatsDto;
 
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,6 +20,7 @@ import java.util.Objects;
 @Slf4j
 public class StatsClientImpl implements StatsClient {
     private final RestClient restClient;
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public StatsClientImpl(@Value("${stats-server.url:http://localhost:9090}") String statsServerUrl) {
         this.restClient = RestClient.builder()
@@ -40,10 +42,8 @@ public class StatsClientImpl implements StatsClient {
 
     @Override
     public List<ViewStatsDto> getStats(String start, String end, List<String> uris, Boolean unique) {
-        validateTimeRange(start, end);
-
         log.info("Получение статистики с параметрами start={}, end={}, uris={}, unique={}", start, end, uris, unique);
-
+        validateTimeRange(start, end);
         List<ViewStatsDto> stats = restClient.get()
                 .uri(uriBuilder -> buildStatsUri(uriBuilder, start, end, uris, unique))
                 .retrieve()
@@ -57,8 +57,8 @@ public class StatsClientImpl implements StatsClient {
         Objects.requireNonNull(start, "Start date cannot be null");
         Objects.requireNonNull(end, "End date cannot be null");
 
-        LocalDateTime startTime = LocalDateTime.parse(start);
-        LocalDateTime endTime = LocalDateTime.parse(end);
+        LocalDateTime startTime = LocalDateTime.parse(start, DATE_TIME_FORMATTER);
+        LocalDateTime endTime = LocalDateTime.parse(end, DATE_TIME_FORMATTER);
 
         if (startTime.isAfter(endTime)) {
             throw new IllegalArgumentException("Start date must be before end date");

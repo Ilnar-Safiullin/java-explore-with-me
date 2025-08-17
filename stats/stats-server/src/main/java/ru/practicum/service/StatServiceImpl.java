@@ -11,6 +11,7 @@ import ru.practicum.mapper.EndpointHitMapper;
 import ru.practicum.model.EndpointHit;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -19,6 +20,8 @@ import java.util.List;
 public class StatServiceImpl implements StatService {
     private final StatRepository statRepository;
     private final EndpointHitMapper endpointHitMapper;
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Transactional
     @Override
@@ -34,9 +37,19 @@ public class StatServiceImpl implements StatService {
     }
 
     @Override
-    public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-        return unique ?
-                statRepository.findUniqueStats(start, end, uris)
-                : statRepository.findAllStats(start, end, uris);
+    public List<ViewStatsDto> getStats(String start, String end, List<String> uris, boolean unique) {
+        log.info("Попытка получить статистику просмотров");
+
+        LocalDateTime startTime = LocalDateTime.parse(start,DATE_TIME_FORMATTER);
+        LocalDateTime endTime = LocalDateTime.parse(end,DATE_TIME_FORMATTER);
+
+        List<ViewStatsDto> viewStatsDtos;
+        if (unique) {
+            viewStatsDtos = statRepository.findUniqueStats(startTime, endTime, uris);
+        } else {
+            viewStatsDtos = statRepository.findAllStats(startTime, endTime, uris);
+        }
+        log.debug("Статистика получена разамер {}", viewStatsDtos.size());
+        return viewStatsDtos;
     }
 }
