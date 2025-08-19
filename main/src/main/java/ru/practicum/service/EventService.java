@@ -1,10 +1,9 @@
 package ru.practicum.service;
 
 import jakarta.servlet.http.HttpServletRequest;
+import ru.practicum.dto.event.filter.EventFilter;
 import ru.practicum.dto.event.*;
-import ru.practicum.model.EventState;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface EventService {
@@ -17,26 +16,11 @@ public interface EventService {
 
     EventFullDto userUpdateEvent(Long userId, Long eventId, UpdateEventUserRequestDto dto);
 
-    List<EventFullDto> searchAdmin(List<Long> users,
-                                   List<EventState> states,
-                                   List<Long> categories,
-                                   LocalDateTime rangeStart,
-                                   LocalDateTime rangeEnd,
-                                   int from,
-                                   int size);
+    List<EventFullDto> searchAdmin(EventFilter filter);
 
     EventFullDto adminEditEvent(Long eventId, UpdateEventAdminRequestDto dto);
 
-    List<EventShortDto> searchPublic(String text,
-                                     List<Long> categories,
-                                     Boolean paid,
-                                     LocalDateTime rangeStart,
-                                     LocalDateTime rangeEnd,
-                                     Boolean onlyAvailable,
-                                     String sort,
-                                     int from,
-                                     int size,
-                                     HttpServletRequest request);
+    List<EventShortDto> searchPublic(EventFilter filter, HttpServletRequest request);
 
     EventFullDto getEventById(Long eventId, HttpServletRequest request);
 }

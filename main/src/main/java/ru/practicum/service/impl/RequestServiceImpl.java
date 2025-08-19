@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional (readOnly = true)
 public class RequestServiceImpl implements RequestService {
 
     private final RequestRepository requestRepository;
@@ -45,7 +46,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
-    @Transactional //незнаю насколько он тут нужен, просто вроде как лист сущностей приходит и записывается, вот повесил
+    @Transactional
     public EventRequestStatusUpdateResultDto changeRequestStatus(Long userId, Long eventId, EventRequestStatusUpdateRequestDto dto) {
         log.info("Изменения статуса заявок инициатором на участие в ивенте ({}, {})", userId, eventId);
         Event event = eventRepository.findById(eventId)
@@ -124,6 +125,7 @@ public class RequestServiceImpl implements RequestService {
         return new EventRequestStatusUpdateResultDto(confirmedDtos, rejectedDtos);
     }
 
+    @Transactional
     @Override
     public ParticipationRequestDto addRequest(Long userId, Long eventId) {
         log.info("Подача заявки юзером на евент ({}, {})", userId, eventId);
@@ -169,6 +171,7 @@ public class RequestServiceImpl implements RequestService {
         return requestDtos;
     }
 
+    @Transactional
     @Override
     public ParticipationRequestDto cancelUserRequest(Long userId, Long requestId) {
         log.info("Попытка отмены своего request пользователем ({}, {})", requestId, userId);

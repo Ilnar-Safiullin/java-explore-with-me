@@ -1,8 +1,12 @@
 package ru.practicum.service.impl;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dao.CategoryRepository;
 import ru.practicum.dao.EventRepository;
 import ru.practicum.dto.category.CategoryDto;
@@ -15,8 +19,8 @@ import ru.practicum.model.Category;
 import ru.practicum.service.CategoryService;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Transactional (readOnly = true)
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryMapper categoryMapper;
     private final EventRepository eventRepository;
 
+    @Transactional
     @Override
     public CategoryDto addCategory(RequestCategoryDto requestCategoryDto) {
         log.info("Добавление категории: {}", requestCategoryDto);
@@ -38,6 +43,7 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryMapper.toDto(category);
     }
 
+    @Transactional
     public void deleteCategory(Long categoryId) {
         log.info("Удаление категории с ID {}", categoryId);
         categoryRepository.findById(categoryId).orElseThrow(() -> new NotFoundException("Category", "Id", categoryId));
@@ -48,13 +54,11 @@ public class CategoryServiceImpl implements CategoryService {
         log.debug("Удалена категория с ID {}", categoryId);
     }
 
+    @Transactional
     @Override
     public CategoryDto updateCategory(Long categoryId, RequestCategoryDto requestCategoryDto) {
         log.info("Обновление категории с ID {}", categoryId);
         Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new NotFoundException("Category", "Id", categoryId));
-//        if (categoryRepository.existsByNameIgnoreCase(requestCategoryDto.getName())) {
-//            throw new AlreadyExistsException("Категория", "name", requestCategoryDto.getName());
-//        } вроде логично что такая проверка должна быть, но тогда падают постман тесты
         category.setName(requestCategoryDto.getName());
         category = categoryRepository.save(category);
         log.debug("Категория с ID {} обновлена, новое имя {}", categoryId, category.getName());
@@ -72,9 +76,11 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public List<CategoryDto> getAllCategories(Integer from, Integer size) {
         log.info("Получение категорий from={}, size={}", from, size);
-        List<CategoryDto> categories = categoryRepository.findCategoriesNative(from, size).stream()
+        Pageable pageable = PageRequest.of(from / size, size, Sort.by("id").ascending());
+        List<CategoryDto> categories = categoryRepository.findAll(pageable)
                 .map(categoryMapper::toDto)
-                .collect(Collectors.toList());
+                .getContent();
+
         log.info("Успешно получено {} категорий", categories.size());
         return categories;
     }

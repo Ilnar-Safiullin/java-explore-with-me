@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dao.UserRepository;
 import ru.practicum.dto.user.RequestUserDto;
 import ru.practicum.dto.user.UserDto;
@@ -21,11 +22,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional (readOnly = true)
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
+    @Transactional
     @Override
     public UserDto addUser(RequestUserDto requestUserDto) {
         log.info("Создание пользователя: {}", requestUserDto);
@@ -46,6 +49,7 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
     public void deleteUser(Long userId) {
         log.info("Удаление пользователя с ID: {}", userId);

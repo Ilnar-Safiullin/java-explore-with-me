@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.client.StatsClient;
 import ru.practicum.dao.EventRepository;
@@ -19,7 +20,6 @@ import ru.practicum.model.Compilation;
 import ru.practicum.model.Event;
 import ru.practicum.dao.CompilationRepository;
 import ru.practicum.service.CompilationService;
-import ru.practicum.service.RequestService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -29,15 +29,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional (readOnly = true)
 public class CompilationServiceImpl implements CompilationService {
 
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
     private final CompilationMapper compilationMapper;
     private final StatsClient statsClient;
-    private final RequestService requestService;
 
 
+    @Transactional
     @Override
     public CompilationDto addCompilation(NewCompilationDto newComDto) {
         log.info("Добавление compilation");
@@ -57,6 +58,7 @@ public class CompilationServiceImpl implements CompilationService {
         return addStats(result);
     }
 
+    @Transactional
     @Override
     public CompilationDto updateCompilation(Long compId, UpdateCompilationRequestDto updateComReqDto) {
         log.info("Обновление подборки с id={} с данными: {}", compId, updateComReqDto);
@@ -99,11 +101,34 @@ public class CompilationServiceImpl implements CompilationService {
         } else {
             compilations = compilationRepository.findAll(pageable).getContent();
         }
+
+        List<Long> eventIdsFromAllCompilations = compilations.stream()
+                .map(Compilation::getEvents)
+                .flatMap(Set::stream)
+                .map(Event::getId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, Long> eventViewsMap = new HashMap<>();
+        if (!eventIdsFromAllCompilations.isEmpty()) {
+            List<String> allUris = eventIdsFromAllCompilations.stream()
+                    .map(id -> "/events/" + id)
+                    .collect(Collectors.toList());
+
+            Map<String, Long> viewsFromStats = getViewsFromStats(allUris);
+
+            for (Long eventId : eventIdsFromAllCompilations) {
+                String uri = "/events/" + eventId;
+                eventViewsMap.put(eventId, viewsFromStats.getOrDefault(uri, 0L));
+            }
+        }
+
         List<CompilationDto> result = compilations.stream()
                 .map(compilationMapper::toDto)
-                .map(this::addStats)
+                .map(compilationDto -> setViewsToEvents(compilationDto, eventViewsMap)) // Используем новый метод
                 .collect(Collectors.toList());
-        log.debug("Подборки получены");
+
+        log.debug("Подборки получены. Обработано событий: {}", eventViewsMap.size());
         return result;
     }
 
@@ -162,6 +187,7 @@ public class CompilationServiceImpl implements CompilationService {
         return new HashSet<>(events);
     }
 
+    @Transactional
     @Override
     public void deleteCompilation(Long compId) {
         log.info("Удаление подборки с id={}", compId);
@@ -170,5 +196,17 @@ public class CompilationServiceImpl implements CompilationService {
         }
         compilationRepository.deleteById(compId);
         log.info("Подборка с id={} успешно удалена", compId);
+    }
+
+    private CompilationDto setViewsToEvents(CompilationDto compilationDto, Map<Long, Long> eventViewsMap) {
+        if (compilationDto.getEvents() != null) {
+            for (EventShortDto eventShortDto : compilationDto.getEvents()) {
+                Long views = eventViewsMap.get(eventShortDto.getId());
+                if (views != null) {
+                    eventShortDto.setViews(views);
+                }
+            }
+        }
+        return compilationDto;
     }
 }

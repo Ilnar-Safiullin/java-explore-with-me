@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.client.StatsClient;
+import ru.practicum.dto.event.filter.EventFilter;
 import ru.practicum.dto.event.*;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
@@ -30,12 +31,15 @@ import ru.practicum.service.EventService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class EventServiceImpl implements EventService {
 
     private final EventRepository eventRepository;
@@ -49,7 +53,7 @@ public class EventServiceImpl implements EventService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-
+    @Transactional
     @Override
     public EventFullDto add(Long userId, RequestEventDto requestEventDto) {
         log.info("Добавление евента юзером с id {}", userId);
@@ -86,6 +90,7 @@ public class EventServiceImpl implements EventService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
     public EventFullDto userUpdateEvent(Long userId, Long eventId, UpdateEventUserRequestDto dto) {
         log.info("Обновление юзером с id: {} евента с id {}", userId, eventId);
@@ -166,34 +171,40 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDto> searchPublic(String text,
-                                            List<Long> categories,
-                                            Boolean paid,
-                                            LocalDateTime rangeStart,
-                                            LocalDateTime rangeEnd,
-                                            Boolean onlyAvailable,
-                                            String sort,
-                                            int from,
-                                            int size,
-                                            HttpServletRequest request) {
+    public List<EventShortDto> searchPublic(EventFilter filter, HttpServletRequest request) {
         log.info("Начат паблик поиска евентов");
-        checkRangeTime(rangeStart, rangeEnd);
-        Pageable pageable = PageRequest.of(from / size, size);
-        Page<Event> events = eventRepository.findPublicEvents(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, pageable);
+        checkRangeTime(filter.getRangeStart(), filter.getRangeEnd());
+
+        Pageable pageable = PageRequest.of(filter.getFrom() / filter.getSize(), filter.getSize());
+        Page<Event> events = eventRepository.findPublicEvents(
+                filter.getText(),
+                filter.getCategories(),
+                filter.getPaid(),
+                filter.getRangeStart(),
+                filter.getRangeEnd(),
+                filter.getOnlyAvailable(),
+                pageable
+        );
 
         if (events.isEmpty()) {
             return List.of();
         }
         saveStats(request);
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+        Map<Long, Long> eventViewsMap = getViewsForEvents(eventIds);
 
         List<EventShortDto> result = events.stream()
-                .peek(event -> event.setViews(getStats(event)))
-                .map(eventMapper::toShortDto)
+                .map(event -> {
+                    event.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
+                    return eventMapper.toShortDto(event);
+                })
                 .collect(Collectors.toList());
 
-        if ("EVENT_DATE".equals(sort)) {
+        if ("EVENT_DATE".equals(filter.getSort())) {
             result.sort(Comparator.comparing(EventShortDto::getEventDate));
-        } else if ("VIEWS".equals(sort)) {
+        } else if ("VIEWS".equals(filter.getSort())) {
             result.sort(Comparator.comparing(EventShortDto::getViews));
         }
         log.debug("Поиск завершен, размер списка {}", result.size());
@@ -238,21 +249,28 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventFullDto> searchAdmin(List<Long> users,
-                                          List<EventState> states,
-                                          List<Long> categories,
-                                          LocalDateTime rangeStart,
-                                          LocalDateTime rangeEnd,
-                                          int from,
-                                          int size) {
+    public List<EventFullDto> searchAdmin(EventFilter filter) {
         log.info("Начат админ поиск евентов");
-        checkRangeTime(rangeStart, rangeEnd);
+        checkRangeTime(filter.getRangeStart(), filter.getRangeEnd());
 
-        Pageable pageable = PageRequest.of(from / size, size);
-        Page<Event> events = eventRepository.findAdminEvents(users, states, categories, rangeStart, rangeEnd, pageable);
+        Pageable pageable = PageRequest.of(filter.getFrom() / filter.getSize(), filter.getSize());
+        Page<Event> events = eventRepository.findAdminEvents(
+                filter.getUsers(),
+                filter.getStates(),
+                filter.getCategories(),
+                filter.getRangeStart(),
+                filter.getRangeEnd(),
+                pageable
+        );
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+        Map<Long, Long> eventViewsMap = getViewsForEvents(eventIds);
         List<EventFullDto> result = events.stream()
-                .peek(event -> event.setViews(getStats(event)))
-                .map(eventMapper::toFullDto)
+                .map(event -> {
+                    event.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
+                    return eventMapper.toFullDto(event);
+                })
                 .collect(Collectors.toList());
         log.info("Поиск админом завершен кол-во элементов: {}", result.size());
         return result;
@@ -261,6 +279,45 @@ public class EventServiceImpl implements EventService {
     private void checkRangeTime(LocalDateTime start, LocalDateTime end) {
         if (start != null && end != null && start.isAfter(end)) {
             throw new BadRequestException("Начало должно быть до окончания");
+        }
+    }
+
+    private Map<Long, Long> getViewsForEvents(List<Long> eventIds) {
+        if (eventIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        List<String> uris = eventIds.stream()
+                .map(id -> "/events/" + id)
+                .collect(Collectors.toList());
+        Map<String, Long> uriViewsMap = getViewsFromStats(uris);
+        Map<Long, Long> eventViewsMap = new HashMap<>();
+        for (Long eventId : eventIds) {
+            String uri = "/events/" + eventId;
+            eventViewsMap.put(eventId, uriViewsMap.getOrDefault(uri, 0L));
+        }
+
+        return eventViewsMap;
+    }
+
+    private Map<String, Long> getViewsFromStats(List<String> uris) {
+        try {
+            LocalDateTime end = LocalDateTime.now();
+            LocalDateTime start = end.minusYears(1);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            List<ViewStatsDto> stats = statsClient.getStats(
+                    start.format(formatter),
+                    end.format(formatter),
+                    uris,
+                    false
+            );
+            Map<String, Long> viewsMap = new HashMap<>();
+            for (ViewStatsDto stat : stats) {
+                viewsMap.put(stat.getUri(), stat.getHits());
+            }
+            return viewsMap;
+        } catch (Exception e) {
+            log.warn("Ошибка при получении данных из сервиса статистики: {}", e.getMessage());
+            return new HashMap<>();
         }
     }
 }

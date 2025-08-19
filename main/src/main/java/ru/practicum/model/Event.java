@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @Table(name = "events")
 @Getter
 @Setter
-@EqualsAndHashCode(of = {"id", "title", "eventDate"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

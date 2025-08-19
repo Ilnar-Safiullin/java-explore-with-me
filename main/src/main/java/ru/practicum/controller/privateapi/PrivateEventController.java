@@ -1,6 +1,7 @@
 package ru.practicum.controller.privateapi;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.dto.event.*;
 import ru.practicum.dto.request.ParticipationRequestDto;
@@ -16,25 +17,28 @@ import java.util.List;
 @RestController
 @RequestMapping("/users/{userId}/events")
 @RequiredArgsConstructor
+@Validated
 public class PrivateEventController {
     private final EventService eventService;
     private final RequestService requestService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public EventFullDto add(@PathVariable Long userId, @Valid @RequestBody RequestEventDto requestEventDto) {
+    public EventFullDto add(@PathVariable Long userId,
+                            @Valid @RequestBody RequestEventDto requestEventDto) {
         return eventService.add(userId, requestEventDto);
     }
 
     @GetMapping("/{eventId}")
-    public EventFullDto getUserEventByUserIdAndEventId(@PathVariable Long userId, @PathVariable Long eventId) {
+    public EventFullDto getUserEventByUserIdAndEventId(@PathVariable Long userId,
+                                                       @PathVariable Long eventId) {
         return eventService.getUserEventByUserIdAndEventId(userId, eventId);
     }
 
     @GetMapping
     public List<EventShortDto> getUserEvents(@PathVariable Long userId,
-                                             @RequestParam(defaultValue = "0") @Valid @PositiveOrZero Integer from,
-                                             @RequestParam(defaultValue = "10") @Valid @Positive Integer size) {
+                                             @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                             @RequestParam(defaultValue = "10") @Positive Integer size) {
         return eventService.getUserEvents(userId, from, size);
     }
 
@@ -46,13 +50,14 @@ public class PrivateEventController {
     }
 
     @GetMapping("/{eventId}/requests")
-    public List<ParticipationRequestDto> getEventRequestsByUserId(@PathVariable Long userId, @PathVariable Long eventId) {
+    public List<ParticipationRequestDto> getEventRequestsByUserId(@PathVariable Long userId,
+                                                                  @PathVariable Long eventId) {
         return requestService.getEventRequestsByUserId(userId, eventId);
     }
 
     @PatchMapping("/{eventId}/requests")
-    public EventRequestStatusUpdateResultDto changeRequestsStatus(@PathVariable @Valid Long userId,
-                                                                  @PathVariable @Valid Long eventId,
+    public EventRequestStatusUpdateResultDto changeRequestsStatus(@PathVariable Long userId,
+                                                                  @PathVariable Long eventId,
                                                                   @RequestBody @Valid EventRequestStatusUpdateRequestDto updateRequest) {
         return requestService.changeRequestStatus(userId, eventId, updateRequest);
     }

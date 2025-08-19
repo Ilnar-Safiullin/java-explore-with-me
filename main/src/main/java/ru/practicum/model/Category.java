@@ -10,7 +10,6 @@ import lombok.*;
 @Setter
 @ToString
 @Table(name = "categories")
-@EqualsAndHashCode(of = {"id"})
 public class Category {
 
     @Id

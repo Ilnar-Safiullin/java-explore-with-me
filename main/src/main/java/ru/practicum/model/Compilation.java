@@ -13,7 +13,6 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = "events")
-@EqualsAndHashCode(of = {"id"})
 public class Compilation {
 
     @Id
