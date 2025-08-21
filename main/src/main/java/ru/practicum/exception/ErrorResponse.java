@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
-public class ErrorResponseSend {
+public class ErrorResponse {
 
     private String status;
 

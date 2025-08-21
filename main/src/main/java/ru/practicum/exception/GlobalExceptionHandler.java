@@ -19,10 +19,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponseSend handleHandlerMethodValidationException(HandlerMethodValidationException e) {
+    public ErrorResponse handleHandlerMethodValidationException(HandlerMethodValidationException e) {
         String message = e.getAllErrors().get(0).getDefaultMessage();
         log.warn("Ошибка валидации параметров: {}", message);
-        return new ErrorResponseSend(
+        return new ErrorResponse(
                 "BAD_REQUEST",
                 "Ошибка валидации параметров",
                 message,
@@ -33,9 +33,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponseSend handleNotFound(NotFoundException e) {
+    public ErrorResponse handleNotFound(NotFoundException e) {
         log.warn("Сущность не найдена: {}", e.getMessage());
-        return new ErrorResponseSend(
+        return new ErrorResponse(
                 "NOT_FOUND",
                 "Запрашиваемый объект не найден.",
                 e.getMessage(),
@@ -45,9 +45,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponseSend handleAlreadyExists(AlreadyExistsException e) {
+    public ErrorResponse handleAlreadyExists(AlreadyExistsException e) {
         log.warn("Сущность уже существует: {}", e.getMessage());
-        return new ErrorResponseSend(
+        return new ErrorResponse(
                 "CONFLICT",
                 "Нарушено ограничение целостности данных.",
                 e.getMessage(),
@@ -57,9 +57,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponseSend handleMissingParameter(MissingServletRequestParameterException e) {
+    public ErrorResponse handleMissingParameter(MissingServletRequestParameterException e) {
         log.warn("Неверный запрос: {}", e.getMessage());
-        return new ErrorResponseSend(
+        return new ErrorResponse(
                 "BAD_REQUEST",
                 "Неверный запрос",
                 e.getMessage(),
@@ -69,9 +69,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadRequestException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponseSend handleBadRequest(BadRequestException e) {
+    public ErrorResponse handleBadRequest(BadRequestException e) {
         log.warn("Некорректный запрос: {}", e.getMessage());
-        return new ErrorResponseSend(
+        return new ErrorResponse(
                 "BAD_REQUEST",
                 "Некорректные параметры запроса",
                 e.getMessage(),
@@ -81,9 +81,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponseSend handleConflictException(ConflictException e) {
+    public ErrorResponse handleConflictException(ConflictException e) {
         log.warn("Конфликт: {}", e.getMessage());
-        return new ErrorResponseSend(
+        return new ErrorResponse(
                 "CONFLICT",
                 "Нарушение бизнес-логики.",
                 e.getMessage(),
@@ -93,10 +93,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponseSend handleValidationException(MethodArgumentNotValidException e) {
+    public ErrorResponse handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
         log.warn("Неправильный запрос: {}", e.getMessage());
-        return new ErrorResponseSend(
+        return new ErrorResponse(
                 "BAD_REQUEST",
                 "Переданы некорректные данные.",
                 message,
@@ -106,9 +106,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponseSend handleException(Exception e) {
+    public ErrorResponse handleException(Exception e) {
         log.error("Внутренняя ошибка сервера", e);
-        return new ErrorResponseSend(
+        return new ErrorResponse(
                 "INTERNAL_ERROR",
                 "Внутренняя ошибка сервера.",
                 "Произошла непредвиденная ошибка. Администратор уже уведомлён.",
@@ -118,9 +118,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponseSend handleDuplicateEmail(DataIntegrityViolationException ex) {
+    public ErrorResponse handleDuplicateEmail(DataIntegrityViolationException ex) {
         log.error("Проблема с уникальностью Email", ex);
-        return new ErrorResponseSend("CONFLICT",
+        return new ErrorResponse("CONFLICT",
                 "Нарушено ограничение целостности.",
                 "не удалось выполнить оператор",
                 LocalDateTime.now()

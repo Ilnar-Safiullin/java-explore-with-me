@@ -1,6 +1,7 @@
 package ru.practicum.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import ru.practicum.dto.category.CategoryDto;
 import ru.practicum.dto.user.UserShortDto;
@@ -19,6 +20,9 @@ public class EventShortDto {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime eventDate;
     private Long id;
+
+    @JsonIgnore
+    private LocalDateTime publishedOn;
 
     private UserShortDto initiator;
     private Boolean paid;

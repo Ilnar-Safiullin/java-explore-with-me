@@ -20,14 +20,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     boolean existsEventByInitiatorId(Long userI);
 
-    @Query(value = """
-            SELECT * FROM events
-            WHERE initiator_id = :userId
-            ORDER BY event_date DESC
-            LIMIT :size
-            OFFSET :from""",
-            nativeQuery = true)
-    List<Event> findUserEventsNative(@Param("userId") Long userId, @Param("size") int size, @Param("from") int from);
+    List<Event> findByInitiatorIdOrderByEventDateDesc(Pageable pageable, Long userId);
 
     @Query("SELECT e FROM Event e " +
            "WHERE e.state = 'PUBLISHED' " +

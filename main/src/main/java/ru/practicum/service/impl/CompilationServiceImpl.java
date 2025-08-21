@@ -107,7 +107,7 @@ public class CompilationServiceImpl implements CompilationService {
                 .flatMap(Set::stream)
                 .map(Event::getId)
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
 
         Map<Long, Long> eventViewsMap = new HashMap<>();
         if (!eventIdsFromAllCompilations.isEmpty()) {
@@ -115,7 +115,15 @@ public class CompilationServiceImpl implements CompilationService {
                     .map(id -> "/events/" + id)
                     .collect(Collectors.toList());
 
-            Map<String, Long> viewsFromStats = getViewsFromStats(allUris);
+            LocalDateTime earliestPublishedDate = compilations.stream()
+                    .map(Compilation::getEvents)
+                    .flatMap(Set::stream)
+                    .map(Event::getPublishedOn)
+                    .filter(Objects::nonNull)
+                    .min(LocalDateTime::compareTo)
+                    .orElse(null);
+
+            Map<String, Long> viewsFromStats = getViewsFromStats(allUris, earliestPublishedDate);
 
             for (Long eventId : eventIdsFromAllCompilations) {
                 String uri = "/events/" + eventId;
@@ -134,11 +142,19 @@ public class CompilationServiceImpl implements CompilationService {
 
     private CompilationDto addStats(CompilationDto compilationDto) {
         if (compilationDto.getEvents() != null && !compilationDto.getEvents().isEmpty()) {
+            LocalDateTime earliestPublishedDate = compilationDto.getEvents().stream()
+                    .map(EventShortDto::getPublishedOn)
+                    .filter(Objects::nonNull)
+                    .min(LocalDateTime::compareTo)
+                    .orElse(null);
 
             List<String> uris = compilationDto.getEvents().stream()
                     .map(event -> "/events/" + event.getId())
                     .collect(Collectors.toList());
-            Map<String, Long> viewsMap = getViewsFromStats(uris);
+            Map<String, Long> viewsMap = new HashMap<>();
+            if (earliestPublishedDate != null) {
+                viewsMap = getViewsFromStats(uris, earliestPublishedDate);
+            }
             for (EventShortDto eventDto : compilationDto.getEvents()) {
                 String eventUri = "/events/" + eventDto.getId();
                 eventDto.setViews(viewsMap.getOrDefault(eventUri, 0L));
@@ -147,10 +163,9 @@ public class CompilationServiceImpl implements CompilationService {
         return compilationDto;
     }
 
-    private Map<String, Long> getViewsFromStats(List<String> uris) {
+    private Map<String, Long> getViewsFromStats(List<String> uris, LocalDateTime start) {
         try {
             LocalDateTime end = LocalDateTime.now();
-            LocalDateTime start = end.minusYears(1);
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             List<ViewStatsDto> stats = statsClient.getStats(
                     start.format(formatter),

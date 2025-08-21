@@ -30,10 +30,7 @@ import ru.practicum.service.EventService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -83,7 +80,8 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> getUserEvents(Long userId, Integer from, Integer size) {
         log.info("Получение юзером информации с id: {} о его созданных евентах", userId);
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User", "id", userId));
-        List<Event> events = eventRepository.findUserEventsNative(userId, size, from);
+        Pageable pageable = PageRequest.of(from / size, size);
+        List<Event> events = eventRepository.findByInitiatorIdOrderByEventDateDesc(pageable, userId);
         log.debug("Найдено {} событий для пользователя id={}", events.size(), userId);
         return events.stream()
                 .map(eventMapper::toShortDto)
@@ -132,9 +130,10 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> new NotFoundException("Event", "EventId", eventId));
 
         saveStats(request);
-        event.setViews(getStats(event));
+        EventFullDto eventFullDto = eventMapper.toFullDto(event);
+        eventFullDto.setViews(getStats(event));
         log.debug("Евент получен, статистика записана, евент с id {}", eventId);
-        return eventMapper.toFullDto(event);
+        return eventFullDto;
     }
 
     private void saveStats(HttpServletRequest request) {
@@ -152,8 +151,11 @@ public class EventServiceImpl implements EventService {
     }
 
     private Long getStats(Event event) {
+        if (event.getPublishedOn() == null) {
+            return 0L;
+        }
 
-        String start = event.getCreatedOn().format(DATE_TIME_FORMATTER);
+        String start = event.getPublishedOn().format(DATE_TIME_FORMATTER);
         String end = LocalDateTime.now().format(DATE_TIME_FORMATTER);
         String uri = "/events/" + event.getId();
 
@@ -193,12 +195,13 @@ public class EventServiceImpl implements EventService {
         List<Long> eventIds = events.stream()
                 .map(Event::getId)
                 .collect(Collectors.toList());
-        Map<Long, Long> eventViewsMap = getViewsForEvents(eventIds);
+        Map<Long, Long> eventViewsMap = getViewsForEvents(events);
 
         List<EventShortDto> result = events.stream()
                 .map(event -> {
-                    event.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
-                    return eventMapper.toShortDto(event);
+                    EventShortDto dto = eventMapper.toShortDto(event);
+                    dto.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
+                    return dto;
                 })
                 .collect(Collectors.toList());
 
@@ -262,14 +265,13 @@ public class EventServiceImpl implements EventService {
                 filter.getRangeEnd(),
                 pageable
         );
-        List<Long> eventIds = events.stream()
-                .map(Event::getId)
-                .collect(Collectors.toList());
-        Map<Long, Long> eventViewsMap = getViewsForEvents(eventIds);
+
+        Map<Long, Long> eventViewsMap = getViewsForEvents(events);
         List<EventFullDto> result = events.stream()
                 .map(event -> {
-                    event.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
-                    return eventMapper.toFullDto(event);
+                    EventFullDto dto = eventMapper.toFullDto(event);
+                    dto.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
+                    return dto;
                 })
                 .collect(Collectors.toList());
         log.info("Поиск админом завершен кол-во элементов: {}", result.size());
@@ -282,14 +284,24 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private Map<Long, Long> getViewsForEvents(List<Long> eventIds) {
-        if (eventIds.isEmpty()) {
+    private Map<Long, Long> getViewsForEvents(Page<Event> events) {
+        LocalDateTime earliestPublishedDate = events.stream()
+                .map(Event::getPublishedOn)
+                .filter(Objects::nonNull)
+                .min(LocalDateTime::compareTo)
+                .orElse(null);
+
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
+
+        if (eventIds.isEmpty() || earliestPublishedDate == null) {
             return new HashMap<>();
         }
         List<String> uris = eventIds.stream()
                 .map(id -> "/events/" + id)
                 .collect(Collectors.toList());
-        Map<String, Long> uriViewsMap = getViewsFromStats(uris);
+        Map<String, Long> uriViewsMap = getViewsFromStats(uris, earliestPublishedDate);
         Map<Long, Long> eventViewsMap = new HashMap<>();
         for (Long eventId : eventIds) {
             String uri = "/events/" + eventId;
@@ -299,10 +311,9 @@ public class EventServiceImpl implements EventService {
         return eventViewsMap;
     }
 
-    private Map<String, Long> getViewsFromStats(List<String> uris) {
+    private Map<String, Long> getViewsFromStats(List<String> uris, LocalDateTime start) {
         try {
             LocalDateTime end = LocalDateTime.now();
-            LocalDateTime start = end.minusYears(1);
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             List<ViewStatsDto> stats = statsClient.getStats(
                     start.format(formatter),
