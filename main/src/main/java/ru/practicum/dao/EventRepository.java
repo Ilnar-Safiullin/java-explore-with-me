@@ -52,4 +52,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
                                 @Param("rangeStart") LocalDateTime rangeStart,
                                 @Param("rangeEnd") LocalDateTime rangeEnd,
                                 Pageable pageable);
+
+    @Query("SELECT COUNT(e) > 0 FROM Event e " +
+           "WHERE e.state = 'PUBLISHED' " +
+           "AND e.id = :eventId")
+    boolean existsPublishedEvent(@Param("eventId") Long eventId);
 }
