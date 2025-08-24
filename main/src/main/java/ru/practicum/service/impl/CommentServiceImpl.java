@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.dao.CommentRepository;
 import ru.practicum.dao.EventRepository;
-import ru.practicum.dao.RequestRepository;
 import ru.practicum.dao.UserRepository;
 import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.comment.RequestCommentDto;
@@ -30,11 +29,11 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
-    private final RequestRepository requestRepository;
     private final CommentMapper commentMapper;
 
 
     @Override
+    @Transactional
     public CommentDto addComment(Long userId, Long eventId, RequestCommentDto requestCommentDto) {
         log.info("Добавление комментария юзером с id {} к евенту с id {}", userId, eventId);
         User author = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User", "id", userId));
@@ -49,6 +48,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Transactional
     public CommentDto updateCommentByUser(Long userId, Long commentId, RequestCommentDto dto) {
         log.info("Обновления комментария с Id: {}, юзером с id {}", commentId, userId);
         User author = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User", "id", userId));
@@ -74,6 +74,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Transactional
     public void removeComment(Long userId, Long commentId) {
         log.info("Удаление коммента с id: {}, юзером с id {}", commentId, userId);
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User", "id", userId));
@@ -97,6 +98,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Transactional
     public void deleteCommentByAdmin(Long commentId) {
         log.info("Удаление коммента с id: {}, Админом", commentId);
         commentRepository.findById(commentId).orElseThrow(() -> new NotFoundException("Comment", "id", commentId));

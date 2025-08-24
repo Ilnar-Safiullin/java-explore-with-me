@@ -8,14 +8,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.client.StatsClient;
+import ru.practicum.dao.CommentRepository;
 import ru.practicum.dao.EventRepository;
+import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.compilation.UpdateCompilationRequestDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.exception.AlreadyExistsException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.mapper.CommentMapper;
 import ru.practicum.mapper.CompilationMapper;
+import ru.practicum.model.Comment;
 import ru.practicum.model.Compilation;
 import ru.practicum.model.Event;
 import ru.practicum.dao.CompilationRepository;
@@ -36,6 +40,8 @@ public class CompilationServiceImpl implements CompilationService {
     private final EventRepository eventRepository;
     private final CompilationMapper compilationMapper;
     private final StatsClient statsClient;
+    private final CommentRepository commentRepository;
+    private final CommentMapper commentMapper;
 
 
     @Transactional
@@ -55,7 +61,7 @@ public class CompilationServiceImpl implements CompilationService {
         compilation = compilationRepository.save(compilation);
         log.debug("Подборка успешно создана");
         CompilationDto result = compilationMapper.toDto(compilation);
-        return addStats(result);
+        return addStatsAndComments(result);
     }
 
     @Transactional
@@ -88,7 +94,7 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation updatedCompilation = compilationRepository.save(compilation);
         CompilationDto result = compilationMapper.toDto(updatedCompilation);
         log.info("Подборка успешно обновлена");
-        return addStats(result);
+        return addStatsAndComments(result);
     }
 
     @Override
@@ -140,7 +146,7 @@ public class CompilationServiceImpl implements CompilationService {
         return result;
     }
 
-    private CompilationDto addStats(CompilationDto compilationDto) {
+    private CompilationDto addStatsAndComments(CompilationDto compilationDto) {
         if (compilationDto.getEvents() != null && !compilationDto.getEvents().isEmpty()) {
             LocalDateTime earliestPublishedDate = compilationDto.getEvents().stream()
                     .map(EventShortDto::getPublishedOn)
@@ -151,6 +157,10 @@ public class CompilationServiceImpl implements CompilationService {
             List<String> uris = compilationDto.getEvents().stream()
                     .map(event -> "/events/" + event.getId())
                     .collect(Collectors.toList());
+            List<Long> eventIds = compilationDto.getEvents().stream()
+                    .map(EventShortDto::getId)
+                    .collect(Collectors.toList());
+            Map<Long, List<CommentDto>> commentsByEventId = getCommentsByEventIds(eventIds);
             Map<String, Long> viewsMap = new HashMap<>();
             if (earliestPublishedDate != null) {
                 viewsMap = getViewsFromStats(uris, earliestPublishedDate);
@@ -158,6 +168,8 @@ public class CompilationServiceImpl implements CompilationService {
             for (EventShortDto eventDto : compilationDto.getEvents()) {
                 String eventUri = "/events/" + eventDto.getId();
                 eventDto.setViews(viewsMap.getOrDefault(eventUri, 0L));
+                eventDto.setComments(commentsByEventId.getOrDefault(eventDto.getId(), Collections.emptyList()));
+
             }
         }
         return compilationDto;
@@ -191,7 +203,7 @@ public class CompilationServiceImpl implements CompilationService {
                 .orElseThrow(() -> new NotFoundException("Compilation", "Id", compId));
         CompilationDto result = compilationMapper.toDto(compilation);
         log.info("Подборка найдена");
-        return addStats(result);
+        return addStatsAndComments(result);
     }
 
     private Set<Event> loadEvents(List<Long> eventIds) {
@@ -223,5 +235,19 @@ public class CompilationServiceImpl implements CompilationService {
             }
         }
         return compilationDto;
+    }
+
+    private Map<Long, List<CommentDto>> getCommentsByEventIds(List<Long> eventIds) {
+        if (eventIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Comment> comments = commentRepository.findAllByEventIdIn(eventIds);
+
+        return comments.stream()
+                .collect(Collectors.groupingBy(
+                        comment -> comment.getEvent().getId(),
+                        Collectors.mapping(commentMapper::toDto, Collectors.toList())
+                ));
     }
 }

@@ -11,18 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.client.StatsClient;
+import ru.practicum.dao.CommentRepository;
+import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.event.filter.EventFilter;
 import ru.practicum.dto.event.*;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.mapper.CommentMapper;
 import ru.practicum.mapper.EventMapper;
 import ru.practicum.mapper.LocationMapper;
-import ru.practicum.model.Category;
-import ru.practicum.model.Event;
-import ru.practicum.model.Location;
-import ru.practicum.model.User;
-import ru.practicum.model.EventState;
+import ru.practicum.model.*;
 import ru.practicum.dao.CategoryRepository;
 import ru.practicum.dao.EventRepository;
 import ru.practicum.dao.UserRepository;
@@ -42,9 +41,11 @@ public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final CommentRepository commentRepository;
 
     private final EventMapper eventMapper;
     private final LocationMapper locationMapper;
+    private final CommentMapper commentMapper;
 
     private final StatsClient statsClient;
 
@@ -132,6 +133,10 @@ public class EventServiceImpl implements EventService {
         saveStats(request);
         EventFullDto eventFullDto = eventMapper.toFullDto(event);
         eventFullDto.setViews(getStats(event));
+        List<CommentDto> commentDtos = commentRepository.findAllByEventId(eventId).stream()
+                        .map(commentMapper::toDto)
+                        .collect(Collectors.toList());
+        eventFullDto.setComments(commentDtos);
         log.debug("Евент получен, статистика записана, евент с id {}", eventId);
         return eventFullDto;
     }
@@ -265,12 +270,16 @@ public class EventServiceImpl implements EventService {
                 filter.getRangeEnd(),
                 pageable
         );
-
+        List<Long> eventIds = events.stream()
+                .map(Event::getId)
+                .collect(Collectors.toList());
         Map<Long, Long> eventViewsMap = getViewsForEvents(events);
+        Map<Long, List<CommentDto>> commentsByEventId = getCommentsByEventIds(eventIds);
         List<EventFullDto> result = events.stream()
                 .map(event -> {
                     EventFullDto dto = eventMapper.toFullDto(event);
                     dto.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
+                    dto.setComments(commentsByEventId.getOrDefault(event.getId(), Collections.emptyList()));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -330,5 +339,19 @@ public class EventServiceImpl implements EventService {
             log.warn("Ошибка при получении данных из сервиса статистики: {}", e.getMessage());
             return new HashMap<>();
         }
+    }
+
+    private Map<Long, List<CommentDto>> getCommentsByEventIds(List<Long> eventIds) {
+        if (eventIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<Comment> comments = commentRepository.findAllByEventIdIn(eventIds);
+
+        return comments.stream()
+                .collect(Collectors.groupingBy(
+                        comment -> comment.getEvent().getId(),
+                        Collectors.mapping(commentMapper::toDto, Collectors.toList())
+                ));
     }
 }
