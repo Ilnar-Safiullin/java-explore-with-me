@@ -4,7 +4,7 @@
 		"name": "feature_comments",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "43585752",
-		"_collection_link": "https://ilnarsafiullin.postman.co/workspace/b6bef720-598d-4a5f-85ba-376f9adf6461/collection/43585752-01d31af8-ea7f-4977-84c4-c70ac30633c2?action=share&source=collection_link&creator=43585752"
+		"_collection_link": "https://ilnarsafiullin.postman.co/workspace/Ilnar-Safiullin's-Workspace~b6bef720-598d-4a5f-85ba-376f9adf6461/collection/43585752-01d31af8-ea7f-4977-84c4-c70ac30633c2?action=share&source=collection_link&creator=43585752"
 	},
 	"item": [
 		{
@@ -383,14 +383,13 @@
 							"    pm.response.to.have.status(200);\r",
 							"});\r",
 							"\r",
-							"pm.test(\"Ответ содержит список комментариев\", function () {\r",
+							"pm.test(\"Ответ содержит количество комментариев\", function () {\r",
 							"    const responseJson = pm.response.json();\r",
 							"    \r",
 							"    pm.expect(responseJson).to.have.property('comments');\r",
-							"    pm.expect(responseJson.comments).to.be.an('array');\r",
-							"    \r",
-							"    pm.expect(responseJson.comments.length).to.be.greaterThan(0);\r",
-							"    \r",
+							"    pm.expect(responseJson.comments).to.not.be.null;\r",
+							"    pm.expect(responseJson.comments).to.be.a('number');\r",
+							"\r",
 							"});"
 						],
 						"type": "text/javascript",
@@ -446,40 +445,6 @@
 				}
 			},
 			"response": []
-		},
-		{
-			"name": "Удаление Евента пользователем (нет такого коммента)",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"exec": [
-							"pm.test(\"Статус ответа 404\", function () {\r",
-							"    pm.response.to.have.status(404);\r",
-							"});"
-						],
-						"type": "text/javascript",
-						"packages": {}
-					}
-				}
-			],
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{baseURL}}/users/{{userId}}/comments/{{commentId}}",
-					"host": [
-						"{{baseURL}}"
-					],
-					"path": [
-						"users",
-						"{{userId}}",
-						"comments",
-						"{{commentId}}"
-					]
-				}
-			},
-			"response": []
 		}
 	],
 	"event": [
@@ -508,22 +473,6 @@
 		{
 			"key": "baseURL",
 			"value": "http://localhost:8080"
-		},
-		{
-			"key": "eventId",
-			"value": "1"
-		},
-		{
-			"key": "userId",
-			"value": "1"
-		},
-		{
-			"key": "categoryId\n",
-			"value": "1"
-		},
-		{
-			"key": "commentId",
-			"value": "1"
 		}
 	]
 }

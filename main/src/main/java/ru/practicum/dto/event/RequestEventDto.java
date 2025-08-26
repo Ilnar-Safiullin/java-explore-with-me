@@ -6,6 +6,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import static ru.practicum.Constants.DATE_TIME_PATTERN;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -25,7 +27,7 @@ public class RequestEventDto {
 
     @NotNull(message = "Поле eventDate не может быть пустым")
     @Future(message = "Поле eventDate должно быть в будущем")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_TIME_PATTERN)
     private LocalDateTime eventDate;
 
     @NotNull(message = "Поле location не может быть пустым")

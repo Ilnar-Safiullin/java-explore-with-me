@@ -19,7 +19,6 @@ import java.util.List;
 public class AdminEventController {
 
     private final EventService eventService;
-    public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     @PatchMapping("/{eventId}")
     public EventFullDto editEvent(@PathVariable Long eventId,

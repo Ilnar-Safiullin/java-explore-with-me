@@ -101,7 +101,6 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public void deleteCommentByAdmin(Long commentId) {
         log.info("Удаление коммента с id: {}, Админом", commentId);
-        commentRepository.findById(commentId).orElseThrow(() -> new NotFoundException("Comment", "id", commentId));
         commentRepository.deleteById(commentId);
         log.debug("Комментарий удален");
     }

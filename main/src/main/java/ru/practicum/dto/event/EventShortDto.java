@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import ru.practicum.dto.category.CategoryDto;
-import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.user.UserShortDto;
 
 import java.time.LocalDateTime;
-import java.util.List;
+
+import static ru.practicum.Constants.DATE_TIME_PATTERN;
 
 @Data
 @AllArgsConstructor
@@ -19,7 +19,7 @@ public class EventShortDto {
     private CategoryDto category;
     private Long confirmedRequests;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_TIME_PATTERN)
     private LocalDateTime eventDate;
     private Long id;
 
@@ -30,5 +30,5 @@ public class EventShortDto {
     private Boolean paid;
     private String title;
     private Long views;
-    private List<CommentDto> comments;
+    private Long comments;
 }

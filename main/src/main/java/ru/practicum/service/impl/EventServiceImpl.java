@@ -12,13 +12,11 @@ import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.client.StatsClient;
 import ru.practicum.dao.CommentRepository;
-import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.event.filter.EventFilter;
 import ru.practicum.dto.event.*;
 import ru.practicum.exception.BadRequestException;
 import ru.practicum.exception.ConflictException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.mapper.CommentMapper;
 import ru.practicum.mapper.EventMapper;
 import ru.practicum.mapper.LocationMapper;
 import ru.practicum.model.*;
@@ -28,9 +26,10 @@ import ru.practicum.dao.UserRepository;
 import ru.practicum.service.EventService;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static ru.practicum.Constants.DATE_TIME_FORMATTER;
 
 @Service
 @AllArgsConstructor
@@ -45,11 +44,7 @@ public class EventServiceImpl implements EventService {
 
     private final EventMapper eventMapper;
     private final LocationMapper locationMapper;
-    private final CommentMapper commentMapper;
-
     private final StatsClient statsClient;
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Transactional
     @Override
@@ -133,10 +128,8 @@ public class EventServiceImpl implements EventService {
         saveStats(request);
         EventFullDto eventFullDto = eventMapper.toFullDto(event);
         eventFullDto.setViews(getStats(event));
-        List<CommentDto> commentDtos = commentRepository.findAllByEventId(eventId).stream()
-                        .map(commentMapper::toDto)
-                        .collect(Collectors.toList());
-        eventFullDto.setComments(commentDtos);
+        Long comments = commentRepository.countByEventId(eventId);
+        eventFullDto.setComments(comments);
         log.debug("Евент получен, статистика записана, евент с id {}", eventId);
         return eventFullDto;
     }
@@ -201,11 +194,12 @@ public class EventServiceImpl implements EventService {
                 .map(Event::getId)
                 .collect(Collectors.toList());
         Map<Long, Long> eventViewsMap = getViewsForEvents(events);
-
+        Map<Long, Long> commentsByEventId = getCommentsByEventIds(eventIds);
         List<EventShortDto> result = events.stream()
                 .map(event -> {
                     EventShortDto dto = eventMapper.toShortDto(event);
                     dto.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
+                    dto.setComments(commentsByEventId.getOrDefault(event.getId(), 0L));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -274,12 +268,12 @@ public class EventServiceImpl implements EventService {
                 .map(Event::getId)
                 .collect(Collectors.toList());
         Map<Long, Long> eventViewsMap = getViewsForEvents(events);
-        Map<Long, List<CommentDto>> commentsByEventId = getCommentsByEventIds(eventIds);
+        Map<Long, Long> commentsByEventId = getCommentsByEventIds(eventIds);
         List<EventFullDto> result = events.stream()
                 .map(event -> {
                     EventFullDto dto = eventMapper.toFullDto(event);
                     dto.setViews(eventViewsMap.getOrDefault(event.getId(), 0L));
-                    dto.setComments(commentsByEventId.getOrDefault(event.getId(), Collections.emptyList()));
+                    dto.setComments(commentsByEventId.getOrDefault(event.getId(), 0L));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -323,10 +317,9 @@ public class EventServiceImpl implements EventService {
     private Map<String, Long> getViewsFromStats(List<String> uris, LocalDateTime start) {
         try {
             LocalDateTime end = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             List<ViewStatsDto> stats = statsClient.getStats(
-                    start.format(formatter),
-                    end.format(formatter),
+                    start.format(DATE_TIME_FORMATTER),
+                    end.format(DATE_TIME_FORMATTER),
                     uris,
                     false
             );
@@ -341,17 +334,17 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private Map<Long, List<CommentDto>> getCommentsByEventIds(List<Long> eventIds) {
+    private Map<Long, Long> getCommentsByEventIds(List<Long> eventIds) {
         if (eventIds.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        List<Comment> comments = commentRepository.findAllByEventIdIn(eventIds);
+        List<Object[]> results = commentRepository.countCommentsByEventIdIn(eventIds);
 
-        return comments.stream()
-                .collect(Collectors.groupingBy(
-                        comment -> comment.getEvent().getId(),
-                        Collectors.mapping(commentMapper::toDto, Collectors.toList())
+        return results.stream()
+                .collect(Collectors.toMap(
+                        result -> (Long) result[0],
+                        result -> (Long) result[1]
                 ));
     }
 }

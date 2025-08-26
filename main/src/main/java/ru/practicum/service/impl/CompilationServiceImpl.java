@@ -10,16 +10,13 @@ import ru.practicum.ViewStatsDto;
 import ru.practicum.client.StatsClient;
 import ru.practicum.dao.CommentRepository;
 import ru.practicum.dao.EventRepository;
-import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.compilation.CompilationDto;
 import ru.practicum.dto.compilation.NewCompilationDto;
 import ru.practicum.dto.compilation.UpdateCompilationRequestDto;
 import ru.practicum.dto.event.EventShortDto;
 import ru.practicum.exception.AlreadyExistsException;
 import ru.practicum.exception.NotFoundException;
-import ru.practicum.mapper.CommentMapper;
 import ru.practicum.mapper.CompilationMapper;
-import ru.practicum.model.Comment;
 import ru.practicum.model.Compilation;
 import ru.practicum.model.Event;
 import ru.practicum.dao.CompilationRepository;
@@ -41,7 +38,6 @@ public class CompilationServiceImpl implements CompilationService {
     private final CompilationMapper compilationMapper;
     private final StatsClient statsClient;
     private final CommentRepository commentRepository;
-    private final CommentMapper commentMapper;
 
 
     @Transactional
@@ -160,7 +156,7 @@ public class CompilationServiceImpl implements CompilationService {
             List<Long> eventIds = compilationDto.getEvents().stream()
                     .map(EventShortDto::getId)
                     .collect(Collectors.toList());
-            Map<Long, List<CommentDto>> commentsByEventId = getCommentsByEventIds(eventIds);
+            Map<Long, Long> commentsByEventId = getCommentsByEventIds(eventIds);
             Map<String, Long> viewsMap = new HashMap<>();
             if (earliestPublishedDate != null) {
                 viewsMap = getViewsFromStats(uris, earliestPublishedDate);
@@ -168,7 +164,7 @@ public class CompilationServiceImpl implements CompilationService {
             for (EventShortDto eventDto : compilationDto.getEvents()) {
                 String eventUri = "/events/" + eventDto.getId();
                 eventDto.setViews(viewsMap.getOrDefault(eventUri, 0L));
-                eventDto.setComments(commentsByEventId.getOrDefault(eventDto.getId(), Collections.emptyList()));
+                eventDto.setComments(commentsByEventId.getOrDefault(eventDto.getId(), 0L));
 
             }
         }
@@ -237,17 +233,17 @@ public class CompilationServiceImpl implements CompilationService {
         return compilationDto;
     }
 
-    private Map<Long, List<CommentDto>> getCommentsByEventIds(List<Long> eventIds) {
+    private Map<Long, Long> getCommentsByEventIds(List<Long> eventIds) {
         if (eventIds.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        List<Comment> comments = commentRepository.findAllByEventIdIn(eventIds);
+        List<Object[]> results = commentRepository.countCommentsByEventIdIn(eventIds);
 
-        return comments.stream()
-                .collect(Collectors.groupingBy(
-                        comment -> comment.getEvent().getId(),
-                        Collectors.mapping(commentMapper::toDto, Collectors.toList())
+        return results.stream()
+                .collect(Collectors.toMap(
+                        result -> (Long) result[0],
+                        result -> (Long) result[1]
                 ));
     }
 }

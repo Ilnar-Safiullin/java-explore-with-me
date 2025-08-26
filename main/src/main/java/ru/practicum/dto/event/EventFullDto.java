@@ -3,12 +3,12 @@ package ru.practicum.dto.event;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import ru.practicum.dto.category.CategoryDto;
-import ru.practicum.dto.comment.CommentDto;
 import ru.practicum.dto.user.UserShortDto;
 import ru.practicum.model.EventState;
 
 import java.time.LocalDateTime;
-import java.util.List;
+
+import static ru.practicum.Constants.DATE_TIME_PATTERN;
 
 @Data
 @Builder
@@ -21,12 +21,12 @@ public class EventFullDto {
     private CategoryDto category;
     private Long confirmedRequests;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_TIME_PATTERN)
     private LocalDateTime createdOn;
 
     private String description;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_TIME_PATTERN)
     private LocalDateTime eventDate;
 
     private UserShortDto initiator;
@@ -34,12 +34,12 @@ public class EventFullDto {
     private boolean paid;
     private Integer participantLimit;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_TIME_PATTERN)
     private LocalDateTime publishedOn;
 
     private boolean requestModeration;
     private EventState state;
     private String title;
     private Long views;
-    private List<CommentDto> comments;
+    private Long comments;
 }

@@ -7,19 +7,21 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import static ru.practicum.Constants.DATE_TIME_PATTERN;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentDto {
 
-    Long id;
+    private Long id;
 
-    Long eventId;
+    private Long eventId;
 
-    Long authorId;
+    private Long authorId;
 
-    String description;
+    private String description;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    LocalDateTime created;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_TIME_PATTERN)
+    private LocalDateTime created;
 }

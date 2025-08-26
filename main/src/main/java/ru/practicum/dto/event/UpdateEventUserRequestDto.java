@@ -8,6 +8,8 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import static ru.practicum.Constants.DATE_TIME_PATTERN;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -21,7 +23,7 @@ public class UpdateEventUserRequestDto {
     @Size(min = 20, max = 7000, message = "Описание должно быть длиной от 20 до 7000 символов")
     private String description;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_TIME_PATTERN)
     @Future(message = "Дата события должна быть в будущем")
     private LocalDateTime eventDate;
 
