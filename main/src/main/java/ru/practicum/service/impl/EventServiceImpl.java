@@ -150,6 +150,7 @@ public class EventServiceImpl implements EventService {
 
     private Long getStats(Event event) {
         if (event.getPublishedOn() == null) {
+            log.warn("Published on is null");
             return 0L;
         }
 

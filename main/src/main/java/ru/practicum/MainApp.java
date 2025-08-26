@@ -9,6 +9,6 @@ public class MainApp {
         SpringApplication.run(MainApp.class);
     }
     /*
-    Сергей Привет спс, вроде все. Комменты в дто отдаю, тесты не сломались
+    Сергей Привет спс, вроде все.
      */
 }

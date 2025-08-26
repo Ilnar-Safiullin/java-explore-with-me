@@ -149,7 +149,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"annotation\": \"annotationdasdasdsadasdasdascsdacdscsdcsdcsdcds\",\r\n    \"category\": {{categoryId}},\r\n    \"description\": \"descriptiofdsfsdcsdcsdcascasdcsdan\",\r\n    \"eventDate\": \"2025-08-25 22:00:00\",\r\n    \"location\": {\r\n        \"lat\": 10.000,\r\n        \"lon\": 20.000\r\n    },\r\n    \"paid\": false,\r\n    \"participantLimit\": 10,\r\n    \"requestModeration\": true,\r\n    \"title\": \"Tittle\"\r\n}",
+					"raw": "{\r\n    \"annotation\": \"annotationdasdasdsadasdasdascsdacdscsdcsdcsdcds\",\r\n    \"category\": {{categoryId}},\r\n    \"description\": \"descriptiofdsfsdcsdcsdcascasdcsdan\",\r\n    \"eventDate\": \"2026-08-25 22:00:00\",\r\n    \"location\": {\r\n        \"lat\": 10.000,\r\n        \"lon\": 20.000\r\n    },\r\n    \"paid\": false,\r\n    \"participantLimit\": 10,\r\n    \"requestModeration\": true,\r\n    \"title\": \"Tittle\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
