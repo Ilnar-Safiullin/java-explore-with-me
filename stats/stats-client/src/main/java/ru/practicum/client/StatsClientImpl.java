@@ -12,15 +12,16 @@ import ru.practicum.ViewStatsDto;
 
 import java.net.URI;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
+
+import static ru.practicum.Constants.DATE_TIME_FORMATTER;
 
 @Service
 @Slf4j
 public class StatsClientImpl implements StatsClient {
     private final RestClient restClient;
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
 
     public StatsClientImpl(@Value("${stats-server.url:http://localhost:9090}") String statsServerUrl) {
         this.restClient = RestClient.builder()

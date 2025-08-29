@@ -8,6 +8,8 @@ import ru.practicum.dto.user.UserShortDto;
 
 import java.time.LocalDateTime;
 
+import static ru.practicum.Constants.DATE_TIME_PATTERN;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,7 +19,7 @@ public class EventShortDto {
     private CategoryDto category;
     private Long confirmedRequests;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = DATE_TIME_PATTERN)
     private LocalDateTime eventDate;
     private Long id;
 
@@ -28,5 +30,5 @@ public class EventShortDto {
     private Boolean paid;
     private String title;
     private Long views;
-
+    private Long comments;
 }

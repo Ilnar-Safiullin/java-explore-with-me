@@ -9,14 +9,16 @@ import ru.practicum.model.EventState;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static ru.practicum.Constants.DATE_TIME_PATTERN;
+
 @Data
 public class EventFilter {
     private List<Long> categories;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = DATE_TIME_PATTERN)
     private LocalDateTime rangeStart;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = DATE_TIME_PATTERN)
     private LocalDateTime rangeEnd;
 
     @PositiveOrZero
